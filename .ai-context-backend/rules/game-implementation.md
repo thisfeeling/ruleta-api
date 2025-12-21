@@ -197,6 +197,166 @@ if ($player->points >= 5000) {
 
 ---
 
+## 5. ¡A Buscar! (Word Search) - BONUS
+
+**Tipo**: No eliminatorio, activado manualmente por supervisor
+
+### Flujo
+```
+1. Supervisor activa bonus game
+   POST /api/supervisor/activate-bonus { game_type: 'word_search' }
+2. Laravel genera grid 15×15 con 12 palabras
+3. Laravel guarda grid en Redis (TTL 1h)
+4. Laravel emite GridGenerated (estado: show)
+5. Supervisor hace game "accesible"
+   POST /api/supervisor/make-accessible/{bonusGameId}
+6. Jugadores solicitan grid
+   GET /api/word-search/grid
+7. Jugadores buscan palabras y envían validación
+   POST /api/word-search/validate-word {
+     word, start_row, start_col, direction, time_elapsed
+   }
+8. Laravel valida contra grid en Redis
+9. Si correcto y no duplicado:
+   - Actualizar word_search_progress
+   - Emitir WordFound
+10. Si jugador completa 12 palabras Y es el primero:
+   - Marcar como winner
+   - Agregar puntos al scoreboard
+   - Emitir GameCompleted
+```
+
+### Endpoints
+```php
+POST /api/supervisor/activate-bonus
+Body: { show_id, game_type: 'word_search' }
+
+POST /api/supervisor/make-accessible/{bonusGameId}
+
+GET /api/word-search/grid?bonus_game_id=123
+Response: { grid: string[][], size: 15, word_count: 12 }
+
+POST /api/word-search/validate-word
+Body: {
+  bonus_game_id,
+  player_id,
+  word,
+  start_row,
+  start_col,
+  direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up',
+  time_elapsed
+}
+```
+
+### Generación del Grid
+```php
+WordSearchGenerator::generate()
+// 1. Grid vacío 15×15
+// 2. Seleccionar 12 palabras random del pool
+// 3. Colocar cada palabra en dirección aleatoria
+// 4. Llenar espacios con letras random
+// 5. Guardar en Redis
+```
+
+### Validación
+```php
+// Validar que palabra existe en grid en coordenadas dadas
+WordSearchGenerator::validateWord($grid, $wordData)
+
+// Anti-cheat:
+- Grid server-side en Redis (cliente nunca ve posiciones)
+- Validación completa de coordenadas y dirección
+- Tiempo mínimo razonable (2s+ por palabra)
+- Cada palabra solo se cuenta una vez por jugador
+```
+
+### Puntuación
+Solo el **primer jugador en completar las 12 palabras** gana y recibe puntos:
+
+```php
+PlayerScore::create([
+  'game_type' => 'word_search',
+  'raw_score' => $timeElapsed,  // Segundos
+  'normalized_score' => max(0, 1000 - (($timeElapsed / 300) * 1000))
+]);
+
+// Ejemplo: 45s → 850 points, 150s → 500 points
+```
+
+---
+
+## 6. No Lo Choques (Flappy Bird) - BONUS
+
+**Tipo**: No eliminatorio, activado manualmente por supervisor
+
+### Flujo
+```
+1. Supervisor activa bonus game
+   POST /api/supervisor/activate-bonus { game_type: 'flappy' }
+2. Bonus game en estado "show"
+3. Supervisor hace game "accesible"
+4. Laravel emite Flappy.GameStarted
+5. Cada jugador juega hasta morir (sin límite de tiempo)
+6. Al morir, jugador envía score
+   POST /api/flappy/submit-score {
+     bonus_game_id, player_id, survival_time, pipes_passed
+   }
+7. Laravel valida:
+   - Tiempo no excede 600s (razonable)
+   - Pipes consistentes con tiempo
+   - No había enviado score antes
+8. Guardar en flappy_scores
+9. Emitir ScoreSubmitted
+10. Agregar puntos al scoreboard
+11. Supervisor finaliza juego cuando quiera
+    POST /api/flappy/end-game { bonus_game_id }
+12. Determinar ganador (mayor survival_time)
+13. Emitir Flappy.GameEnded
+```
+
+### Endpoints
+```php
+POST /api/flappy/submit-score
+Body: {
+  bonus_game_id,
+  player_id,
+  survival_time,  // Segundos sobrevividos
+  pipes_passed    // Número de pipes
+}
+
+POST /api/flappy/end-game
+Body: { bonus_game_id }
+
+GET /api/flappy/leaderboard?bonus_game_id=123
+```
+
+### Validación Anti-Cheat
+```php
+FlappyValidator::validate($survivalTime, $pipesPassed)
+
+// Reglas:
+- survivalTime <= 600s (10 min máximo razonable)
+- pipesPassed <= ceil(survivalTime * 2)  // Máx 2 pipes/segundo
+- Un intento por jugador (unique constraint)
+```
+
+### Puntuación
+**Todos** los jugadores que juegan reciben puntos (no solo el ganador):
+
+```php
+PlayerScore::create([
+  'game_type' => 'flappy',
+  'raw_score' => $survivalTime,
+  'normalized_score' => min(1000, round(($survivalTime / 100) * 1000))
+]);
+
+// Ejemplo: 30s → 300 points, 75s → 750 points, 100s+ → 1000 points
+```
+
+El **ganador** es quien tiene el mayor `survival_time`.
+
+---
+
 ## Reglas Generales
 
 ### Todas las acciones validan:

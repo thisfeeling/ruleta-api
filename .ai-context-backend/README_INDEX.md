@@ -15,15 +15,17 @@ Este directorio contiene la documentación contextual del backend del proyecto *
 │   └── technical-goals.md   # Objetivos técnicos y arquitectónicos
 ├── knowledge/               # Conocimiento técnico
 │   ├── architecture.md      # Arquitectura general del backend
-│   ├── audio-system.md      # Sistema de audios (ElevenLabs/TopMediai + S3)
+│   ├── audio-system.md      # Sistema de audios (3 canales: music/sfx/voice)
 │   ├── backend-structure.md # Estructura de carpetas y organización
 │   ├── reverb-websockets.md # Implementación de Reverb y WebSockets
 │   ├── database-schema.md   # Esquema de base de datos
 │   ├── docker-deployment.md # Docker, Dokploy y deployment
+│   ├── bonus-games.md       # Sistema de bonus games (Word Search + Flappy)
+│   ├── scoreboard-system.md # Sistema unificado de puntuaciones
 │   └── tech-stack.md        # Stack tecnológico completo
 └── rules/                   # Reglas de implementación
     ├── api-contracts.md     # Contratos de API y eventos
-    ├── game-implementation.md # Lógica de los 4 juegos
+    ├── game-implementation.md # Lógica de los 6 juegos (4 eliminatorios + 2 bonus)
     ├── security-guidelines.md # Seguridad y autenticación
     └── state-machine.md     # Máquina de estados del show
 ```
@@ -36,11 +38,23 @@ Este directorio contiene la documentación contextual del backend del proyecto *
 - **Reverb sincroniza**: WebSockets para comunicación en tiempo real
 
 ### 2. Sistema de Juegos
-El proyecto implementa 4 juegos eliminatorios:
+El proyecto implementa 6 juegos totales (4 eliminatorios + 2 bonus opcionales):
+
+**Juegos Eliminatorios:**
 1. **Juego del Millonario** - Preguntas y respuestas (tipo "¿Quién quiere ser millonario?")
 2. **La Cuerda** - Competencia grupal de clicks con visualización 3D
 3. **Deletréalo** - Deletreo de palabras con audio y validación por supervisores
 4. **La Ruleta** (final) - Ruleta de puntos acumulativos, siempre deja un ganador
+
+**Bonus Games (No Eliminatorios):**
+5. **Word Search** - Sopa de letras 15×15 con 12 palabras, compiten por velocidad
+6. **Flappy Bird** - Juego de supervivencia tipo Flappy, compiten por tiempo sobrevivido
+
+Los bonus games:
+- Se activan manualmente por el supervisor entre fases eliminatorias
+- NO eliminan jugadores
+- Generan puntajes en tabla unificada (0-1000 normalizado)
+- Son opcionales y no bloquean el flujo principal
 
 ### 3. Roles del Sistema
 - **Player**: Jugador participante (30-50 personas)
@@ -48,8 +62,9 @@ El proyecto implementa 4 juegos eliminatorios:
 
 ### 4. Sistema de Audios
 - **ElevenLabs/TopMediai**: Generación de voz (narrador estilo SquidCraft)
-- **RustFS (S3)**: Almacenamiento de audios reutilizables
-- **Audios preca rgados**: Números 1-50, diálogos del sistema
+- **RustFS (S3)**: Almacenamiento de audios reutilizables con 3 canales independientes
+- **3 Canales**: Música (0.6), SFX (0.8), Voces (1.0) controlables por separado
+- **Audios precargados**: Números 1-50, diálogos del sistema, música de fondo
 - **Audios de jugadores**: Grabaciones de "Deletréalo" auditables
 
 ### 5. Características Clave
@@ -58,6 +73,8 @@ El proyecto implementa 4 juegos eliminatorios:
 - Sistema de eliminación progresiva matemática
 - Chat en tiempo real (texto + emojis)
 - Visualización 3D con Three.js/WebGPU (La Cuerda)
+- Scoreboard unificado con normalización 0-1000 para todos los juegos
+- Bonus games activables por supervisor (no eliminatorios)
 - Intensidad de audio adaptativa según estado del juego
 
 ## Cómo Usar Esta Documentación

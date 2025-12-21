@@ -2,11 +2,16 @@
 
 ## Visión General
 
-El sistema de audio es crítico para la experiencia inmersiva del game show. Combina:
-- **Voz del narrador** (estilo SquidCraft)
-- **Audios del sistema** (números, diálogos)
-- **Audios de jugadores** (Deletréalo)
-- **Música ambiente** (adaptativa)
+El sistema de audio es crítico para la experiencia inmersiva del game show. Usa un **sistema de 3 canales independientes** (Music, SFX, Voice) con preloading de assets críticos y cola secuencial para narraciones.
+
+### Componentes Clave
+- **3 Canales**: Music (0.6), SFX (0.8), Voice (1.0) con volumen independiente
+- **Voz del narrador** (estilo SquidCraft) - Canal Voice
+- **Efectos de sonido** por juego - Canal SFX
+- **Música ambiente** adaptativa - Canal Music
+- **Audios precargados**: Números 1-50, diálogos del sistema
+- **Audios de jugadores**: Grabaciones de "Deletréalo" auditables
+- **Cola de reproducción**: Narraciones Voice se encolan para evitar superposición
 
 ---
 
@@ -38,29 +43,100 @@ El sistema de audio es crítico para la experiencia inmersiva del game show. Com
 
 ---
 
+## Sistema de 3 Canales
+
+### Canales Independientes
+
+**Music (Música de fondo)**
+- Volumen default: 0.6
+- Loop continuo
+- Cambios suaves con crossfade
+- Adaptativo según fase del juego
+
+**SFX (Efectos de sonido)**
+- Volumen default: 0.8
+- Play instantáneo
+- Sin cola
+- Por acción/evento
+
+**Voice (Narraciones)**
+- Volumen default: 1.0
+- Cola secuencial (no superposición)
+- Prioridad más alta
+- Espera a que termine el audio anterior
+
+### Organización en S3
+
+```
+audios/
+├── music/
+│   ├── lobby.mp3
+│   ├── tension-low.mp3
+│   ├── tension-medium.mp3
+│   ├── tension-high.mp3
+│   └── victory.mp3
+│
+├── sfx/
+│   ├── ui/
+│   │   ├── click.mp3
+│   │   ├── transition.mp3
+│   │   └── countdown-tick.mp3
+│   ├── rope/
+│   │   ├── tension-creak.mp3
+│   │   └── rope-snap.mp3
+│   ├── bomb/
+│   │   ├── ticking.mp3
+│   │   └── explosion.mp3
+│   ├── roulette/
+│   │   ├── spin.mp3
+│   │   └── stop.mp3
+│   └── results/
+│       ├── victory.mp3
+│       └── defeat.mp3
+│
+└── voices/
+    ├── numbers/
+    │   ├── 1.mp3
+    │   └── ...50.mp3
+    ├── system/
+    │   ├── welcome.mp3
+    │   ├── eliminated.mp3
+    │   └── winner.mp3
+    └── countdown/
+        ├── 10.mp3
+        └── ...1.mp3
+```
+
+---
+
 ## Tipos de Audio
 
 ### 1. Audios del Sistema (Reutilizables)
 
-**Números (1-50)**
-```
-"Jugador número 1"
-"Jugador número 2"
-...
-"Jugador número 50"
-```
+**Organizados por tipo y canal:**
 
-**Diálogos Generales**
-- Bienvenida
-- Transiciones
-- Eliminación
-- Victoria
+#### Canal VOICE (Narraciones)
+- **Números (1-50)**: "Jugador número X"
+- **Diálogos generales**: Bienvenida, transiciones, eliminación, victoria
+- **Por juego**:
+  - Millonario: "Pregunta en pantalla", "Correcto", "Incorrecto"
+  - Cuerda: "Prepárense", "El grupo ha perdido"
+  - Deletréalo: "Deletrea: [palabra]", "Correcto", "Tiempo agotado"
+  - Ruleta: "Gira la ruleta", "+500", "Pierdes todo", "Tenemos ganador"
+  - Word Search: "Encuentra las palabras", "Primera palabra encontrada", "¡Ganador!"
+  - Flappy: "¡A volar!", "Nuevo récord"
 
-**Por Juego**
-- Millonario: "Pregunta en pantalla", "Correcto", "Incorrecto"
-- Cuerda: "Prepárense", "El grupo ha perdido"
-- Deletréalo: "Deletrea: [palabra]", "Correcto", "Tiempo agotado"
-- Ruleta: "Gira la ruleta", "+500", "Pierdes todo", "Tenemos ganador"
+#### Canal SFX (Efectos)
+- **UI**: Click, transición, countdown tick
+- **Rope**: Tensión, cuerda rompiéndose
+- **Bomb**: Ticking, explosión
+- **Roulette**: Spin, parada
+- **Results**: Victoria, derrota
+
+#### Canal MUSIC (Ambiente)
+- **Lobby**: Música relajada de espera
+- **Tension Low/Medium/High**: Según fase del juego
+- **Victory**: Celebración al ganar
 
 ### 2. Audios de Jugadores (Deletréalo)
 
@@ -69,10 +145,361 @@ El sistema de audio es crítico para la experiencia inmersiva del game show. Com
 - Auditables
 - NO reutilizables
 
-### 3. Música Ambiente (Futuro)
+### 3. Música Ambiente (Adaptativa)
 
-- Tensión baja / media / alta
-- Sincronizada con estado del juego
+La música cambia según el estado del juego:
+- **LOBBY**: Música relajada
+- **MILLIONAIRE/SPELL**: Tensión media
+- **ROPE**: Tensión alta (crece con el juego)
+- **ROULETTE**: Tensión muy alta
+- **BONUS GAMES**: Tensión baja, música divertida
+- **WINNER**: Música de victoria
+
+El backend emite eventos `AudioRequested` con `channel: 'music'` cuando cambia la fase.
+
+---
+
+## Evento AudioRequested Expandido
+
+El evento ahora incluye información del canal:
+
+```php
+event(new AudioRequested(
+  showId: $show->id,
+  url: $signedUrl,
+  context: 'eliminated',
+  channel: 'voice',        // 'music', 'sfx', 'voice'
+  volume: 1.0,            // 0.0-1.0
+  metadata: [
+    'player_id' => $player->id,
+    'preload' => false,
+    'loop' => false,
+  ]
+));
+```
+
+### Broadcast Payload
+
+```typescript
+Event: AudioRequested
+
+Payload: {
+  url: string               // URL firmada de S3
+  context: string           // 'eliminated', 'click', 'tension-high'
+  channel: 'music' | 'sfx' | 'voice'
+  volume: number            // 0.0-1.0
+  metadata?: {
+    player_id?: number
+    preload?: boolean       // Precargar sin reproducir
+    loop?: boolean          // Loop continuo (música)
+    fade?: {                // Crossfade
+      in: number,           // Fade in duration (ms)
+      out: number           // Fade out duration (ms)
+    }
+  }
+}
+```
+
+---
+
+## Preloading de Assets Críticos
+
+Durante la fase LOBBY, el backend broadcast a todos los assets críticos para precarga:
+
+```php
+// En LobbyPhase
+$criticalAssets = [
+  ['key' => 'sfx/ui/click.mp3', 'channel' => 'sfx'],
+  ['key' => 'sfx/ui/countdown-tick.mp3', 'channel' => 'sfx'],
+  ['key' => 'voices/system/eliminated.mp3', 'channel' => 'voice'],
+  ['key' => 'voices/system/welcome.mp3', 'channel' => 'voice'],
+  ['key' => 'sfx/bomb/explosion.mp3', 'channel' => 'sfx'],
+];
+
+foreach ($criticalAssets as $asset) {
+  $url = Storage::disk('rustfs')->url($asset['key']);
+  event(new AudioRequested(
+    showId: $show->id,
+    url: $url,
+    context: 'preload',
+    channel: $asset['channel'],
+    volume: 0,
+    metadata: ['preload' => true]
+  ));
+}
+```
+
+---
+
+## Cola Secuencial para Voice
+
+Las narraciones en el canal Voice se reproducen secuencialmente para evitar superposición:
+
+**Backend NO maneja la cola**, solo emite eventos en orden. **Frontend** (Vue) gestiona la cola:
+
+```javascript
+// Frontend - audioService.ts
+class AudioService {
+  private voiceQueue: Array<{url: string, context: string}> = []
+  private isPlayingVoice = false
+  
+  playVoice(url: string, context: string) {
+    this.voiceQueue.push({url, context})
+    if (!this.isPlayingVoice) {
+      this.processVoiceQueue()
+    }
+  }
+  
+  async processVoiceQueue() {
+    if (this.voiceQueue.length === 0) {
+      this.isPlayingVoice = false
+      return
+    }
+    
+    this.isPlayingVoice = true
+    const {url, context} = this.voiceQueue.shift()!
+    
+    const audio = new Audio(url)
+    audio.volume = 1.0
+    audio.onended = () => this.processVoiceQueue()
+    await audio.play()
+  }
+}
+```
+
+Backend solo se asegura de emitir eventos de voice en orden lógico.
+
+---
+
+## Patrones de Integración
+
+### 1. Juego con tensión creciente (La Cuerda)
+
+```php
+// Backend emite música + SFX sync
+event(new AudioRequested(
+  showId: $show->id,
+  url: $tensionHighMusicUrl,
+  context: 'rope-tension-high',
+  channel: 'music',
+  volume: 0.6,
+  metadata: ['loop' => true, 'fade' => ['in' => 1000]]
+));
+
+// Cada X segundos, SFX de tensión
+event(new AudioRequested(
+  showId: $show->id,
+  url: $creakSfxUrl,
+  context: 'rope-creak',
+  channel: 'sfx',
+  volume: 0.8
+));
+```
+
+### 2. Eliminación con narración
+
+```php
+// 1. SFX de eliminación (inmediato)
+event(new AudioRequested(
+  showId: $show->id,
+  url: $defeatSfxUrl,
+  context: 'defeat-sfx',
+  channel: 'sfx',
+  volume: 0.8
+));
+
+// 2. Narración (cola voice)
+event(new AudioRequested(
+  showId: $show->id,
+  url: $eliminatedVoiceUrl,
+  context: 'eliminated',
+  channel: 'voice',
+  volume: 1.0,
+  metadata: ['player_id' => $player->id]
+));
+```
+
+### 3. Countdown con ticks
+
+```php
+// Music background
+event(new AudioRequested(..., channel: 'music', loop: true));
+
+// Cada segundo, tick SFX
+for ($i = 10; $i >= 1; $i--) {
+  sleep(1);
+  event(new AudioRequested(
+    ...,
+    url: $tickSfxUrl,
+    context: 'countdown-tick',
+    channel: 'sfx'
+  ));
+}
+```
+
+### 4. Bonus game activado
+
+```php
+// Cambiar a música divertida
+event(new AudioRequested(
+  ...,
+  url: $bonusMusicUrl,
+  channel: 'music',
+  metadata: ['loop' => true, 'fade' => ['in' => 2000, 'out' => 1000]]
+));
+
+// Narración de inicio
+event(new AudioRequested(
+  ...,
+  url: $bonusStartVoiceUrl,
+  context: 'bonus-start',
+  channel: 'voice'
+));
+```
+
+### 5. Three.js sync (La Cuerda visual)
+
+Frontend puede sincronizar visual 3D con audio usando AudioContext:
+
+```typescript
+// Frontend solo
+const audioCtx = new AudioContext()
+const analyser = audioCtx.createAnalyser()
+// Sync rope tension visual with music amplitude
+```
+
+Backend no necesita cambios para esto.
+
+### 6. Transiciones de fase
+
+```php
+// Al cambiar ShowPhase
+event(new ShowStateChanged($show, $newPhase));
+
+// Cambiar música según fase
+$musicMap = [
+  ShowPhase::LOBBY => 'lobby.mp3',
+  ShowPhase::MILLIONAIRE => 'tension-medium.mp3',
+  ShowPhase::ROPE => 'tension-high.mp3',
+  ShowPhase::BONUS_WORD_SEARCH => 'bonus-fun.mp3',
+  ShowPhase::ROULETTE => 'tension-extreme.mp3',
+  ShowPhase::WINNER => 'victory.mp3',
+];
+
+$musicFile = $musicMap[$newPhase] ?? 'tension-low.mp3';
+event(new AudioRequested(
+  ...,
+  url: Storage::url("audios/music/{$musicFile}"),
+  channel: 'music',
+  metadata: ['loop' => true, 'fade' => ['in' => 2000, 'out' => 2000]]
+));
+```
+
+### 7. Click feedback universal
+
+Todos los clicks de UI reproducen SFX de click. Backend NO emite esto, solo frontend local:
+
+```typescript
+// Frontend - global click handler
+onClick() {
+  audioService.playSFX('/audios/sfx/ui/click.mp3')
+  // ... rest of click logic
+}
+```
+
+---
+
+## Seeders Expandidos
+
+Los seeders ahora organizan audios por tipo:
+
+```php
+class SystemAudioSeeder extends Seeder {
+  public function run() {
+    // VOICE audios
+    $voiceDialogs = [
+      'eliminated' => ['Has sido eliminado', 'Jugador eliminado'],
+      'passed' => ['Avanzas a la siguiente ronda'],
+      'intro' => ['Bienvenidos al juego'],
+      // ...
+    ];
+    
+    foreach ($voiceDialogs as $context => $texts) {
+      foreach ($texts as $text) {
+        $audio = TopMediai::generate($text);
+        SystemAudio::create([
+          'context' => $context,
+          'audio_type' => 'voice',
+          'default_volume' => 1.0,
+          'text' => $text,
+          's3_key' => $audio['key'],
+        ]);
+      }
+    }
+    
+    // SFX audios (sin generar, assets pre-existentes)
+    $sfxAssets = [
+      ['context' => 'click', 's3_key' => 'sfx/ui/click.mp3'],
+      ['context' => 'explosion', 's3_key' => 'sfx/bomb/explosion.mp3'],
+      // ...
+    ];
+    
+    foreach ($sfxAssets as $asset) {
+      SystemAudio::create([
+        ...$asset,
+        'audio_type' => 'sfx',
+        'default_volume' => 0.8,
+        'text' => '',
+        'reusable' => true,
+      ]);
+    }
+    
+    // MUSIC audios
+    $musicAssets = [
+      ['context' => 'lobby-music', 's3_key' => 'music/lobby.mp3'],
+      ['context' => 'tension-high', 's3_key' => 'music/tension-high.mp3'],
+      // ...
+    ];
+    
+    foreach ($musicAssets as $asset) {
+      SystemAudio::create([
+        ...$asset,
+        'audio_type' => 'music',
+        'default_volume' => 0.6,
+        'text' => '',
+        'reusable' => true,
+      ]);
+    }
+  }
+}
+```
+
+---
+
+## Volúmenes por Canal
+
+### Defaults
+
+- **Music**: 0.6 (background, no debe opacar voice)
+- **SFX**: 0.8 (feedback claro pero no abrumador)
+- **Voice**: 1.0 (prioridad máxima, narración clara)
+
+### Ajustables
+
+El supervisor puede ajustar volúmenes globales via dashboard:
+
+```php
+POST /api/supervisor/audio/volume
+Body: {
+  channel: 'music' | 'sfx' | 'voice',
+  volume: 0.0-1.0
+}
+
+// Broadcast a todos
+event(new AudioVolumeChanged($channel, $volume));
+```
+
+Frontend aplica el ajuste globalmente a su canal respectivo.
 
 ---
 
@@ -82,6 +509,8 @@ El sistema de audio es crítico para la experiencia inmersiva del game show. Com
 CREATE TABLE system_audios (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   context VARCHAR(50) NOT NULL,        -- 'eliminated', 'passed', 'intro', etc.
+  audio_type ENUM('music', 'sfx', 'voice') DEFAULT 'voice',
+  default_volume DECIMAL(3,2) DEFAULT 1.0,
   text TEXT NOT NULL,                  -- Texto generado
   s3_key VARCHAR(255) NOT NULL,        -- Ruta en S3
   locale VARCHAR(10) DEFAULT 'es-CO',  -- Español colombiano
@@ -89,9 +518,14 @@ CREATE TABLE system_audios (
   created_at TIMESTAMP,
   updated_at TIMESTAMP,
   
-  INDEX idx_context (context)
+  INDEX idx_context (context),
+  INDEX idx_audio_type (audio_type)
 );
 ```
+
+**Nuevos campos:**
+- `audio_type`: Canal de reproducción (music/sfx/voice)
+- `default_volume`: Volumen default 0.0-1.0
 
 ## Tabla `number_audios`
 
