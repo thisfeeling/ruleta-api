@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "thisfeeling/ruleta-api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "The API backend for Ruleta Familiar game show.",
     "keywords": [
         "laravel",
         "framework"

@@ -13,15 +13,20 @@ Este directorio contiene la documentación contextual del backend del proyecto *
 │   ├── project-overview.md  # Visión general del proyecto
 │   ├── game-goals.md        # Objetivos de diseño de juego
 │   └── technical-goals.md   # Objetivos técnicos y arquitectónicos
-├── knowledge/               # Conocimiento técnico
+├── knowledge/               # Conocimiento técnico (14 archivos)
 │   ├── architecture.md      # Arquitectura general del backend
 │   ├── audio-system.md      # Sistema de audios (3 canales: music/sfx/voice)
 │   ├── backend-structure.md # Estructura de carpetas y organización
-│   ├── reverb-websockets.md # Implementación de Reverb y WebSockets
+│   ├── reverb-websockets.md # Implementación de Reverb y WebSockets (28+ eventos)
 │   ├── database-schema.md   # Esquema de base de datos
 │   ├── docker-deployment.md # Docker, Dokploy y deployment
 │   ├── bonus-games.md       # Sistema de bonus games (Word Search + Flappy)
 │   ├── scoreboard-system.md # Sistema unificado de puntuaciones
+│   ├── achievement-system.md # Sistema de logros (35+ achievements)
+│   ├── audit-system.md      # Auditoría dual (DB + S3 permanente)
+│   ├── game-data-models.md  # Modelos SQL de 6 juegos + scoreboard unificado
+│   ├── instructions-system.md # Sistema de instrucciones pre-juego
+│   ├── i18n-system.md       # Sistema de internacionalización (es-CO/en-US)
 │   └── tech-stack.md        # Stack tecnológico completo
 └── rules/                   # Reglas de implementación
     ├── api-contracts.md     # Contratos de API y eventos
@@ -66,8 +71,28 @@ Los bonus games:
 - **3 Canales**: Música (0.6), SFX (0.8), Voces (1.0) controlables por separado
 - **Audios precargados**: Números 1-50, diálogos del sistema, música de fondo
 - **Audios de jugadores**: Grabaciones de "Deletréalo" auditables
+- **Tracking events**: TrackStarted, TrackEnded, VolumeChanged para integración MusicBox UI
+- **Metadata tracking**: Tabla audio_plays para analytics y auditoría
 
-### 5. Características Clave
+### 5. Sistemas Avanzados
+- **Achievement System**: 35+ logros desbloqueables (OnCorrectAnswer, OnGameWon, OnFirstBlood, etc)
+- **Audit System**: Dual storage (DB 30 días + S3 permanente) con partitioning automático
+- **Instructions System**: Pre-game instructions bilingües con tracking de lectura
+- **i18n System**: Español colombiano (default) + English fallback, TTS narración nativa
+- **Unified Scoreboard**: Normalización 0-1000 para todos los juegos, tabla player_scores
+
+### 6. WebSocket Events (28+)
+El sistema emite 28+ tipos de eventos WebSocket a través de Reverb:
+- **Game flow**: GameStarted, GameEnded, PhaseChanged, PlayerEliminated (8 eventos)
+- **Achievements**: AchievementUnlocked, AchievementProgress (2 eventos)
+- **Instructions**: InstructionsRequired, InstructionsCompleted (2 eventos)
+- **Audio tracking**: TrackStarted, TrackEnded, VolumeChanged (3 eventos)
+- **Audit**: AuditLogCreated (1 evento)
+- **Per-game events**: MillionaireQuestionDisplayed, RopeStateUpdated, RouletteSpinning, WordFound, FlappyCrashed, etc (12+ eventos)
+
+Ver `reverb-websockets.md` para lista completa y payloads detallados.
+
+### 7. Características Clave
 - Reconexión por PIN (4 dígitos)
 - Stat Cards públicas de jugadores
 - Sistema de eliminación progresiva matemática
@@ -76,6 +101,10 @@ Los bonus games:
 - Scoreboard unificado con normalización 0-1000 para todos los juegos
 - Bonus games activables por supervisor (no eliminatorios)
 - Intensidad de audio adaptativa según estado del juego
+- 35+ achievements desbloqueables con triggers automáticos
+- Auditoría permanente con dual storage (DB + S3)
+- Instrucciones pre-juego multilingües con tracking
+- Soporte bilingüe (español colombiano / English) en DB y TTS
 
 ## Cómo Usar Esta Documentación
 
@@ -115,10 +144,14 @@ Reverb NO es un repositorio separado, vive dentro de Laravel.
 
 1. ✅ **Servidor autoritativo** - seguridad y consistencia
 2. ✅ **Audios reutilizables** - costos y performance
-3. ✅ **WebSockets 100%** - experiencia en tiempo real
-4. ✅ **S3 para audios** - escalabilidad y auditoría
+3. ✅ **WebSockets 100%** - experiencia en tiempo real (28+ eventos)
+4. ✅ **S3 para audios** - escalabilidad y auditoría permanente
 5. ✅ **Reconexión por PIN** - WiFi inestable en contexto familiar
 6. ✅ **Supervisión integrada** - validación humana cuando es necesaria
+7. ✅ **Achievement system** - gamificación y engagement (35+ logros)
+8. ✅ **Dual audit storage** - compliance y analytics (DB 30d + S3 forever)
+9. ✅ **Internacionalización** - español colombiano default + English fallback
+10. ✅ **Scoreboard unificado** - normalización 0-1000 cross-game
 
 ## Estado del Proyecto
 

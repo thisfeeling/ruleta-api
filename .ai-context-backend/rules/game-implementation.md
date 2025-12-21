@@ -8,9 +8,11 @@
 2. Jugadores envían respuesta
 3. Laravel valida y calcula puntos
 4. Laravel emite AnswerValidated por jugador
-5. Tras N preguntas, Laravel elimina X jugadores con menor puntaje
-6. Laravel emite PlayerEliminated por cada uno
-7. Laravel transiciona a siguiente juego
+5. Repite pasos 1-4 hasta completar TODAS las preguntas del juego
+6. Al finalizar todas las preguntas, Laravel calcula score normalizado (0-1000) por jugador
+7. Laravel elimina X jugadores con menor puntaje total
+8. Laravel emite PlayerEliminated por cada uno
+9. Laravel transiciona a siguiente juego
 ```
 
 ### Endpoints
@@ -21,25 +23,61 @@ Body: { answer: 'A' | 'B' | 'C' | 'D' }
 
 ### Lógica de Puntos
 ```php
+// Puntos por pregunta individual
 if ($correct && $timeUsed < 5) {
   $points = 3;
 } elseif ($correct) {
   $points = 1;
 } else {
-  $points = -2;
-  $player->cooldown_until = now()->addSeconds(15);
+  $points = 0; // No hay penalización ni cooldown
+}
+
+// Acumulación en millionaire_answers table
+MillionaireAnswer::create([
+  'game_id' => $game->id,
+  'player_id' => $player->id,
+  'question_id' => $question->id,
+  'selected_answer' => $answer,
+  'is_correct' => $correct,
+  'points_earned' => $points,
+  'time_taken' => $timeUsed
+]);
+```
+
+### Normalización de Score
+```php
+// Al finalizar todas las preguntas
+$maxPoints = $totalQuestions * 3; // Máximo posible si todas correctas <5s
+
+foreach ($players as $player) {
+  $earnedPoints = MillionaireAnswer::where('player_id', $player->id)
+    ->where('game_id', $game->id)
+    ->sum('points_earned');
+  
+  $normalizedScore = ($earnedPoints / $maxPoints) * 1000;
+  
+  PlayerScore::create([
+    'player_id' => $player->id,
+    'game_type' => 'millionaire',
+    'game_id' => $game->id,
+    'score' => round($normalizedScore, 2)
+  ]);
 }
 ```
 
-### Eliminación
+### Eliminación Masiva al Final
 ```php
-$losers = Player::where('status', 'alive')
-  ->orderBy('points')
+// Solo después de completar TODAS las preguntas
+$losers = PlayerScore::where('game_id', $game->id)
+  ->where('game_type', 'millionaire')
+  ->orderBy('score', 'asc')
   ->limit($eliminateCount)
-  ->get();
+  ->get()
+  ->pluck('player_id');
 
-foreach ($losers as $loser) {
-  app(EliminatePlayer::class)->handle($loser);
+foreach ($losers as $playerId) {
+  $player = Player::find($playerId);
+  app(EliminatePlayer::class)->handle($player);
 }
 ```
 

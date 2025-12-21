@@ -803,6 +803,179 @@ RUSTFS_ENDPOINT=https://s3.amazonaws.com
 
 ---
 
+## Audio Tracking Events
+
+El backend emite eventos WebSocket para que el frontend (`MusicBox.vue`) pueda trackear qué está sonando en tiempo real.
+
+### TrackStarted
+
+Emitido cuando un track de audio comienza a reproducirse (principalmente canal `music` y `voice`).
+
+```php
+// Backend Service
+broadcast(new TrackStarted(
+  showId: $show->id,
+  trackId: 'millionaire_theme',
+  channel: 'music',
+  url: $signedUrl,
+  durationSeconds: 120,
+  volume: 0.6,
+  metadata: [
+    'game' => 'millionaire',
+    'loop' => true,
+  ]
+))->toOthers();
+```
+
+**WebSocket Payload**:
+```json
+{
+  "track_id": "millionaire_theme",
+  "channel": "music",
+  "url": "https://s3.../millionaire_theme.mp3",
+  "duration_seconds": 120,
+  "volume": 0.6,
+  "metadata": {
+    "game": "millionaire",
+    "loop": true
+  }
+}
+```
+
+**Frontend**: `MusicBox.vue` (upper-left UI) actualiza:
+- Track name display
+- Waveform visualizer
+- Progress bar
+
+### TrackEnded
+
+Emitido cuando un track termina (completado, detenido manualmente, o error).
+
+```php
+broadcast(new TrackEnded(
+  showId: $show->id,
+  trackId: 'millionaire_theme',
+  channel: 'music',
+  reason: 'completed',  // 'completed' | 'stopped' | 'error'
+  metadata: []
+))->toOthers();
+```
+
+**WebSocket Payload**:
+```json
+{
+  "track_id": "millionaire_theme",
+  "channel": "music",
+  "reason": "completed"
+}
+```
+
+**Frontend**: `MusicBox.vue` limpia UI, detiene visualizer.
+
+### VolumeChanged
+
+Emitido cuando el supervisor cambia el volumen global de un canal (desde el panel de control).
+
+```php
+// Endpoint: POST /api/supervisor/audio/volume
+broadcast(new VolumeChanged(
+  showId: $show->id,
+  channel: 'music',  // 'music' | 'sfx' | 'voice'
+  volume: 0.4,       // 0.0 - 1.0
+  previousVolume: 0.6
+))->toOthers();
+```
+
+**WebSocket Payload**:
+```json
+{
+  "channel": "music",
+  "volume": 0.4,
+  "previous_volume": 0.6
+}
+```
+
+**Frontend**: `MusicBox.vue` actualiza sliders, aplica nuevo volumen a HTML5 Audio instances.
+
+### Integración MusicBox UI
+
+El componente `MusicBox.vue` (esquina superior izquierda del juego) escucha estos eventos:
+
+```typescript
+// Frontend - MusicBox.vue
+Echo.channel(`game.show.${showId}`)
+  .listen('.TrackStarted', (event: TrackStartedEvent) => {
+    musicBox.value.currentTrack = event.track_id
+    musicBox.value.channel = event.channel
+    musicBox.value.duration = event.duration_seconds
+    startVisualizer(event.url)
+  })
+  .listen('.TrackEnded', (event: TrackEndedEvent) => {
+    musicBox.value.currentTrack = null
+    stopVisualizer()
+  })
+  .listen('.VolumeChanged', (event: VolumeChangedEvent) => {
+    audioService.setChannelVolume(event.channel, event.volume)
+    musicBox.value.volumes[event.channel] = event.volume
+  })
+```
+
+**Visualización**:
+- Track name (e.g. "Millonario - Tensión Media")
+- Waveform animado (AudioContext analyser)
+- Time progress (0:45 / 2:00)
+- Channel indicator (🎵 Music | 🔊 SFX | 🎙️ Voice)
+- Volume slider per channel (solo supervisor)
+
+### Metadata Tracking
+
+El backend también guarda metadata de reproducción en la tabla `audio_plays`:
+
+```sql
+CREATE TABLE audio_plays (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  show_id BIGINT NOT NULL,
+  audio_id BIGINT NULL,  -- Si es SystemAudio
+  track_id VARCHAR(100) NOT NULL,
+  channel ENUM('music', 'sfx', 'voice') NOT NULL,
+  url TEXT NOT NULL,
+  played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  duration_seconds INT NULL,
+  completed BOOLEAN DEFAULT FALSE,
+  
+  INDEX (show_id),
+  INDEX (channel),
+  INDEX (played_at)
+);
+```
+
+```php
+// Al emitir TrackStarted
+AudioPlay::create([
+  'show_id' => $show->id,
+  'audio_id' => $audio?->id,
+  'track_id' => $trackId,
+  'channel' => $channel,
+  'url' => $url,
+  'duration_seconds' => $duration,
+  'played_at' => now(),
+]);
+
+// Al emitir TrackEnded
+AudioPlay::where('track_id', $trackId)
+  ->where('show_id', $show->id)
+  ->latest()
+  ->first()
+  ?->update(['completed' => $reason === 'completed']);
+```
+
+**Uso:**
+- Analytics de qué audios se reproducen más
+- Debugging de audio system
+- Auditoría de supervisores cambiando volumen
+
+---
+
 ## Optimizaciones
 
 ### Precarga (Lobby)

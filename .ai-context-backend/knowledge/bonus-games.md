@@ -78,17 +78,96 @@ class WordSearchGenerator {
   
   public function generate(): array
   {
-    // 1. Crear grid vacío 15x15
-    // 2. Seleccionar 12 palabras aleatorias del pool
-    // 3. Colocar cada palabra en dirección aleatoria
-    // 4. Llenar espacios vacíos con letras random
-    // 5. Retornar ['grid' => [], 'words' => [], 'size' => 15]
+    $grid = array_fill(0, self::GRID_SIZE, array_fill(0, self::GRID_SIZE, ''));
+    $words = $this->selectRandomWords(self::WORD_COUNT);
+    $placements = [];
+    
+    foreach ($words as $word) {
+      $placed = false;
+      $attempts = 0;
+      
+      while (!$placed && $attempts < 100) {
+        $direction = array_rand(self::DIRECTIONS);
+        [$dx, $dy] = self::DIRECTIONS[$direction];
+        
+        $startRow = rand(0, self::GRID_SIZE - 1);
+        $startCol = rand(0, self::GRID_SIZE - 1);
+        
+        if ($this->canPlaceWord($grid, $word, $startRow, $startCol, $dx, $dy)) {
+          $this->placeWord($grid, $word, $startRow, $startCol, $dx, $dy);
+          $placements[] = [
+            'word' => $word,
+            'start_row' => $startRow,
+            'start_col' => $startCol,
+            'direction' => $direction,
+          ];
+          $placed = true;
+        }
+        
+        $attempts++;
+      }
+    }
+    
+    // Llenar espacios vacíos con letras random
+    for ($i = 0; $i < self::GRID_SIZE; $i++) {
+      for ($j = 0; $j < self::GRID_SIZE; $j++) {
+        if ($grid[$i][$j] === '') {
+          $grid[$i][$j] = chr(rand(65, 90)); // A-Z
+        }
+      }
+    }
+    
+    return [
+      'grid' => $grid,
+      'words' => array_column($placements, 'word'),
+      'placements' => $placements, // Solo para validación server-side
+      'size' => self::GRID_SIZE,
+    ];
   }
   
-  public function validateWord(array $grid, array $wordData): bool
+  private function canPlaceWord(array $grid, string $word, int $row, int $col, int $dx, int $dy): bool
   {
-    // Validar que la palabra existe en el grid
-    // en las coordenadas y dirección especificadas
+    $len = strlen($word);
+    
+    for ($i = 0; $i < $len; $i++) {
+      $newRow = $row + ($i * $dx);
+      $newCol = $col + ($i * $dy);
+      
+      if ($newRow < 0 || $newRow >= self::GRID_SIZE || 
+          $newCol < 0 || $newCol >= self::GRID_SIZE) {
+        return false;
+      }
+      
+      if ($grid[$newRow][$newCol] !== '' && 
+          $grid[$newRow][$newCol] !== $word[$i]) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  private function placeWord(array &$grid, string $word, int $row, int $col, int $dx, int $dy): void
+  {
+    $len = strlen($word);
+    
+    for ($i = 0; $i < $len; $i++) {
+      $grid[$row + ($i * $dx)][$col + ($i * $dy)] = $word[$i];
+    }
+  }
+  
+  public function validateWord(array $placements, array $wordData): bool
+  {
+    foreach ($placements as $placement) {
+      if ($placement['word'] === $wordData['word'] &&
+          $placement['start_row'] === $wordData['start_row'] &&
+          $placement['start_col'] === $wordData['start_col'] &&
+          $placement['direction'] === $wordData['direction']) {
+        return true;
+      }
+    }
+    
+    return false;
   }
   
   public function storeGrid(int $bonusGameId, array $gridData): void
@@ -96,15 +175,40 @@ class WordSearchGenerator {
     // Guardar en Redis con TTL de 1 hora
     Redis::setex("word_search:{$bonusGameId}", 3600, json_encode($gridData));
   }
+  
+  private function selectRandomWords(int $count): array
+  {
+    $pool = [
+      'FAMILIA', 'JUEGO', 'DIVERSION', 'GANADOR', 'RULETA',
+      'TIEMPO', 'VICTORIA', 'DESAFIO', 'COMPETENCIA', 'PREMIO',
+      'CAMPEON', 'PUNTOS', 'ELIMINADO', 'SUPERVIVIENTE', 'RONDA',
+      'EQUIPO', 'ESTRATEGIA', 'HABILIDAD', 'TALENTO', 'SUERTE',
+    ];
+    
+    shuffle($pool);
+    return array_slice($pool, 0, $count);
+  }
 }
 ```
 
 **Pool de palabras (español):**
-- FAMILIA, JUEGO, DIVERSION, GANADOR, RULETA
-- TIEMPO, VICTORIA, DESAFIO, COMPETENCIA, PREMIO
-- CAMPEON, PUNTOS, ELIMINADO, SUPERVIVIENTE, RONDA
-- EQUIPO, ESTRATEGIA, HABILIDAD, TALENTO, SUERTE
-- TENSION, EMOCION, ADRENALINA, CONCENTRACION, RAPIDEZ
+```php
+// config/word-search.php
+return [
+  'word_pool' => [
+    'FAMILIA', 'JUEGO', 'DIVERSION', 'GANADOR', 'RULETA',
+    'TIEMPO', 'VICTORIA', 'DESAFIO', 'COMPETENCIA', 'PREMIO',
+    'CAMPEON', 'PUNTOS', 'ELIMINADO', 'SUPERVIVIENTE', 'RONDA',
+    'EQUIPO', 'ESTRATEGIA', 'HABILIDAD', 'TALENTO', 'SUERTE',
+    'TENSION', 'EMOCION', 'ADRENALINA', 'CONCENTRACION', 'RAPIDEZ',
+  ],
+  
+  'grid_size' => 15,
+  'word_count' => 12,
+  'min_word_length' => 5,
+  'max_word_length' => 14,
+];
+```
 
 #### Flujo del Juego
 
@@ -267,12 +371,17 @@ CREATE TABLE flappy_scores (
 class FlappyValidator {
   private const MAX_REASONABLE_SURVIVAL = 600;  // 10 min máximo
   private const MAX_PIPES_PER_SECOND = 2;
+  private const MIN_SURVIVAL_TIME = 0.5; // 500ms mínimo
   
   public function validate(float $survivalTime, int $pipesPassed): array
   {
     $errors = [];
     
     // Validar tiempo razonable
+    if ($survivalTime < self::MIN_SURVIVAL_TIME) {
+      $errors[] = 'Tiempo de supervivencia muy bajo (posible manipulación)';
+    }
+    
     if ($survivalTime > self::MAX_REASONABLE_SURVIVAL) {
       $errors[] = 'Tiempo de supervivencia excede máximo razonable';
     }
@@ -283,10 +392,113 @@ class FlappyValidator {
       $errors[] = 'Pipes pasados exceden máximo posible para el tiempo';
     }
     
+    // Validar ratio mínimo (no puede pasar 0 pipes en 60s)
+    if ($survivalTime > 10 && $pipesPassed < 1) {
+      $errors[] = 'Ratio pipes/tiempo inconsistente';
+    }
+    
     return [
       'valid' => empty($errors),
       'errors' => $errors,
     ];
+  }
+  
+  public function normalizeScore(float $survivalTime): int
+  {
+    // Normalización 0-1000 basada en tiempo de supervivencia
+    // Máximo razonable: 600s = 1000 puntos
+    $normalized = ($survivalTime / self::MAX_REASONABLE_SURVIVAL) * 1000;
+    return min(1000, round($normalized));
+  }
+}
+```
+
+**Controller: `FlappyController`**
+
+```php
+class FlappyController extends Controller
+{
+  public function submitScore(Request $request)
+  {
+    $validated = $request->validate([
+      'bonus_game_id' => 'required|exists:bonus_games,id',
+      'player_id' => 'required|exists:players,id',
+      'survival_time' => 'required|numeric|min:0.5|max:600',
+      'pipes_passed' => 'required|integer|min:0',
+    ]);
+    
+    $bonusGame = BonusGame::findOrFail($validated['bonus_game_id']);
+    
+    if ($bonusGame->status !== 'accesible') {
+      return response()->json(['error' => 'Game not accessible'], 403);
+    }
+    
+    // Validar anti-cheat
+    $validator = new FlappyValidator();
+    $validation = $validator->validate(
+      $validated['survival_time'],
+      $validated['pipes_passed']
+    );
+    
+    if (!$validation['valid']) {
+      Log::warning('Flappy anti-cheat violation', [
+        'player_id' => $validated['player_id'],
+        'errors' => $validation['errors'],
+        'data' => $validated,
+      ]);
+      
+      return response()->json([
+        'error' => 'Score validation failed',
+        'details' => $validation['errors'],
+      ], 422);
+    }
+    
+    // Verificar que el jugador no haya enviado score antes
+    $existingScore = FlappyScore::where('bonus_game_id', $bonusGame->id)
+      ->where('player_id', $validated['player_id'])
+      ->first();
+      
+    if ($existingScore) {
+      return response()->json(['error' => 'Score already submitted'], 409);
+    }
+    
+    // Guardar score
+    $score = FlappyScore::create([
+      'bonus_game_id' => $bonusGame->id,
+      'player_id' => $validated['player_id'],
+      'survival_time' => $validated['survival_time'],
+      'pipes_passed' => $validated['pipes_passed'],
+      'died_at' => now(),
+    ]);
+    
+    // Normalizar y agregar al scoreboard
+    $normalizedScore = $validator->normalizeScore($validated['survival_time']);
+    
+    PlayerScore::create([
+      'player_id' => $validated['player_id'],
+      'show_id' => $bonusGame->show_id,
+      'game_type' => 'flappy',
+      'raw_score' => $validated['survival_time'],
+      'normalized_score' => $normalizedScore,
+      'metadata' => [
+        'pipes_passed' => $validated['pipes_passed'],
+        'bonus_game_id' => $bonusGame->id,
+      ],
+    ]);
+    
+    // Broadcast evento
+    broadcast(new FlappyScoreSubmitted(
+      $bonusGame->show_id,
+      $validated['player_id'],
+      $validated['survival_time'],
+      $validated['pipes_passed']
+    ));
+    
+    return response()->json([
+      'message' => 'Score submitted successfully',
+      'score' => $score,
+      'normalized_score' => $normalizedScore,
+    ]);
   }
 }
 ```
