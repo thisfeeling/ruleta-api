@@ -3,6 +3,28 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "type": "module",
+    "description": "A Ruleta game web application built with Vue 3, TypeScript, Vite, Phaser, and Tres.js.",
+    "version": "0.0.0",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/thisfeeling/ruleta-web.git"
+    },
+    "author": "thisfeeling <murksopps@gmail.com> (https://jemg.dev/)",
+    "homepage": "https://ruleta.jemg.dev/",
+    "keywords": [
+        "phaser",
+        "phaser3",
+        "typescript",
+        "vue",
+        "vite",
+        "tailwindcss",
+        "daisyui",
+        "three",
+        "tresjs",
+        "webgl",
+        "game",
+        "webgame"
+    ],
     "engines": {
         "node": "^20.19.0 || >=22.12.0"
     },

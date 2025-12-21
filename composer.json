@@ -5,7 +5,18 @@
     "description": "The API backend for Ruleta Familiar game show.",
     "keywords": [
         "laravel",
-        "framework"
+        "framework",
+        "phaser3",
+        "typescript",
+        "vue",
+        "vite",
+        "tailwindcss",
+        "daisyui",
+        "three",
+        "tresjs",
+        "webgl",
+        "game",
+        "webgame"
     ],
     "license": "MIT",
     "require": {
