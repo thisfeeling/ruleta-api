@@ -13,6 +13,20 @@ Este directorio contiene la documentación contextual del backend del proyecto *
 │   ├── project-overview.md  # Visión general del proyecto
 │   ├── game-goals.md        # Objetivos de diseño de juego
 │   └── technical-goals.md   # Objetivos técnicos y arquitectónicos
+├── implementation/          # Guías de implementación paso a paso (18 archivos)
+│   ├── 01-project-setup.md         # Laravel 12, Docker, Reverb setup
+│   ├── 02-database-schema.md       # Migraciones y seeders (23 tablas)
+│   ├── 03-models-relationships.md  # Modelos Eloquent y relaciones
+│   ├── 04-core-services.md         # Storage, TTS, Audio, PIN Generator
+│   ├── 05-reverb-websocket-setup.md # Canales, eventos, broadcasting (28+ eventos)
+│   ├── 06-authentication-authorization.md # Sanctum, policies, middleware
+│   ├── 07-game-services-base.md    # Game engine, state machine, eliminación
+│   ├── 08-13-all-games.md          # Implementación de los 6 juegos
+│   ├── 14-achievement-system.md    # Triggers y unlocking de logros
+│   ├── 15-audit-system.md          # Dual storage (DB + S3)
+│   ├── 16-instructions-system.md   # Pre-game instructions con tracking
+│   ├── 17-scoreboard-system.md     # Normalización y ranking unificado
+│   └── 18-testing-strategy.md      # Pest test suite completo
 ├── knowledge/               # Conocimiento técnico (14 archivos)
 │   ├── architecture.md      # Arquitectura general del backend
 │   ├── audio-system.md      # Sistema de audios (3 canales: music/sfx/voice)
@@ -105,6 +119,49 @@ Ver `reverb-websockets.md` para lista completa y payloads detallados.
 - Auditoría permanente con dual storage (DB + S3)
 - Instrucciones pre-juego multilingües con tracking
 - Soporte bilingüe (español colombiano / English) en DB y TTS
+
+## Cómo Usar Esta Documentación
+
+### Para IA/Copilot
+Cuando trabajes en el backend:
+1. **Lee primero** `goals/project-overview.md` para entender la visión
+2. **Consulta** `knowledge/architecture.md` para decisiones arquitectónicas
+3. **Sigue** `implementation/` paso a paso para construir el proyecto
+4. **Revisa** `rules/` antes de implementar cualquier feature
+5. **Valida** contra `knowledge/database-schema.md` antes de crear migraciones
+
+### Para Desarrolladores
+- Los archivos en `goals/` explican el **QUÉ** y **POR QUÉ**
+- Los archivos en `implementation/` explican el **CÓMO PASO A PASO**
+- Los archivos en `knowledge/` explican el **CONTEXTO TÉCNICO**
+- Los archivos en `rules/` definen los **LÍMITES** y **ESTÁNDARES**
+
+## Guía de Implementación - Orden Recomendado
+
+La carpeta `implementation/` contiene 18 archivos numerados que deben seguirse en orden:
+
+**Status Legend**: [ ] Not Started | [~] In Progress | [x] Completed | [✓] Tested
+
+### Phase 1: Foundation (Steps 1-6)
+1. [ ] **[Project Setup](implementation/01-project-setup.md)** - Laravel 12, Docker, Reverb, environment
+2. [ ] **[Database Schema](implementation/02-database-schema.md)** - 23 tablas, migraciones, seeders
+3. [ ] **[Models & Relationships](implementation/03-models-relationships.md)** - Eloquent models, relations, scopes
+4. [ ] **[Core Services](implementation/04-core-services.md)** - Storage S3, TTS, Audio, PIN Generator
+5. [ ] **[Reverb WebSocket Setup](implementation/05-reverb-websocket-setup.md)** - 28+ eventos, canales
+6. [ ] **[Authentication & Authorization](implementation/06-authentication-authorization.md)** - Sanctum, policies
+
+### Phase 2: Game Engine (Steps 7-13)
+7. [ ] **[Game Services Base](implementation/07-game-services-base.md)** - Game engine, state machine
+8-13. [ ] **[All Game Implementations](implementation/08-13-all-games.md)** - 6 juegos completos
+
+### Phase 3: Advanced Systems (Steps 14-17)
+14. [ ] **[Achievement System](implementation/14-achievement-system.md)** - 35+ logros con triggers
+15. [ ] **[Audit System](implementation/15-audit-system.md)** - Dual storage (DB + S3)
+16. [ ] **[Instructions System](implementation/16-instructions-system.md)** - Pre-game instructions
+17. [ ] **[Scoreboard System](implementation/17-scoreboard-system.md)** - Normalización 0-1000
+
+### Phase 4: Quality (Step 18)
+18. [ ] **[Testing Strategy](implementation/18-testing-strategy.md)** - Pest test suite completo
 
 ## Cómo Usar Esta Documentación
 
