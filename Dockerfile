@@ -19,8 +19,8 @@ COPY --from=builder /nix /nix
 ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
 
 # Crear usuario www-data
-RUN groupadd -g 33 www-data && \
-    useradd -u 33 -g www-data -s /bin/bash -m www-data
+RUN if ! getent group www-data >/dev/null; then groupadd -g 33 www-data; fi && \
+    if ! id -u www-data >/dev/null 2>&1; then useradd -u 33 -g www-data -s /bin/bash -m www-data; fi
 
 # Crear directorios necesarios
 RUN mkdir -p /app /assets /var/log /etc/supervisor/conf.d /etc/nginx
