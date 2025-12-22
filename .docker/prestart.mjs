@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import path from 'path';
 
 const [,, templatePath, outputPath] = process.argv;
 
@@ -28,8 +29,34 @@ if (process.env.NIXPACKS_PHP_FALLBACK_PATH) {
     config = config.replace(/\$if\(NIXPACKS_PHP_FALLBACK_PATH\) \([\s\S]*?\) else \(([\s\S]*?)\)/g, '$1');
 }
 
-// Replace nginx paths
-config = config.replace(/\$!\{nginx\}/g, '/nix/var/nix/profiles/default');
+// Replace nginx paths with a tried list and a sensible fallback
+const candidates = [
+    '/nix/var/nix/profiles/default/etc/nginx',
+    '/nix/var/nix/profiles/default/etc',
+    '/nix/var/nix/profiles/default',
+    '/etc/nginx',
+    '/etc'
+];
+let chosen = null;
+for (const c of candidates) {
+    if (existsSync(path.join(c, 'conf', 'mime.types')) || existsSync(path.join(c, 'mime.types'))) {
+        chosen = c;
+        break;
+    }
+}
+
+if (!chosen) {
+    // create a minimal mime.types so nginx won't fail if nothing is found
+    try {
+        if (!existsSync('/etc/nginx')) mkdirSync('/etc/nginx', { recursive: true });
+        writeFileSync('/etc/nginx/mime.types', 'types {\n    text/html html;\n    text/css css;\n    application/javascript js;\n}');
+        chosen = '/etc/nginx';
+    } catch (e) {
+        chosen = '/nix/var/nix/profiles/default';
+    }
+}
+
+config = config.replace(/\$!\{nginx\}/g, chosen);
 
 writeFileSync(outputPath, config);
 console.log('Nginx configuration generated successfully');
