@@ -1,6 +1,6 @@
 # 01 - Project Setup
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 
