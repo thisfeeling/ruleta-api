@@ -121,7 +121,7 @@ class Player extends Model
         ]);
     }
 
-    public function addScore(int $gameId, string $gameType, int $rawScore, int $normalizedScore, ?array $metadata = null): PlayerScore
+    public function addScore(?int $gameId, string $gameType, int $rawScore, int $normalizedScore, ?array $metadata = null): PlayerScore
     {
         return $this->scores()->create([
             'game_id' => $gameId,

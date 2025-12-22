@@ -13,6 +13,7 @@ class PlayerAchievement extends Model
     protected $fillable = [
         'player_id',
         'achievement_id',
+        'show_id',
         'unlocked_at',
         'metadata',
     ];

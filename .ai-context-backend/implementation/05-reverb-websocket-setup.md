@@ -1,6 +1,6 @@
 # 05 - Reverb WebSocket Setup
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 

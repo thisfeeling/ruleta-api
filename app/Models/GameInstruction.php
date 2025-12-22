@@ -12,11 +12,17 @@ class GameInstruction extends Model
     protected $fillable = [
         'show_id',
         'game_id',
+        'game_type',
         'locale',
         'title_es',
         'title_en',
         'body_es',
         'body_en',
+        'content_es',
+        'content_en',
+        'audio_es_url',
+        'audio_en_url',
+        'estimated_duration_seconds',
         'metadata',
     ];
 

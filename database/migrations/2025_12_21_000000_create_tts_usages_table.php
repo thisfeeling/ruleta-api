@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('tts_usages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('audio_track_id')->nullable()->constrained('audio_tracks')->nullOnDelete();
+            // create column now, add foreign key in a later migration after audio_tracks exists
+            $table->unsignedBigInteger('audio_track_id')->nullable();
             $table->string('request_id')->nullable();
             $table->unsignedBigInteger('character_count')->nullable();
             $table->unsignedSmallInteger('status_code')->nullable();

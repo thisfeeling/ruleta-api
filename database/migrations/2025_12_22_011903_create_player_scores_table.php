@@ -14,14 +14,15 @@ return new class extends Migration
         Schema::create('player_scores', function (Blueprint $table) {
             $table->id();
             $table->foreignId('player_id')->constrained('players')->onDelete('cascade');
-            $table->foreignId('game_id')->constrained('games')->onDelete('cascade');
+            $table->foreignId('game_id')->nullable()->constrained('games')->nullOnDelete();
             $table->enum('game_type', [
                 'millionaire',
                 'rope',
                 'spell',
                 'roulette',
                 'word_search',
-                'flappy'
+                'flappy',
+                'achievement'
             ]);
             $table->integer('raw_score')->comment('Score specific to game type');
             $table->integer('normalized_score')->comment('0-1000 normalized');
