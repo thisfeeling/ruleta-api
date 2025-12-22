@@ -31,9 +31,13 @@ cmds = [
     # Ensure PHP additional ini files dir exists
     "mkdir -p $(php -i | grep 'additional .ini files' | awk '{print $NF}')",
 
-    # Run custom PHP extension setup (keeps it minimal and deterministic)
-    "chmod +x setup-php-extensions.sh",
-    "bash setup-php-extensions.sh",
+    # Run custom PHP extension setup (use the one from .docker folder)
+    "chmod +x /app/.docker/setup-php-extensions.sh",
+    "bash /app/.docker/setup-php-extensions.sh",
+
+    # Ensure prestart script is available where start.sh expects it
+    "mkdir -p /assets/scripts",
+    "cp /app/.docker/prestart.mjs /assets/scripts/prestart.mjs",
 
     # Prepare supervisor directory and only copy the worker processes we want
     "mkdir -p /etc/supervisor/conf.d/",
