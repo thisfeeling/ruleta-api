@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class AudioTrack extends Model
 {
@@ -50,12 +51,30 @@ class AudioTrack extends Model
     }
 
     // Helpers
-    public function getSignedUrl(int $expiresInMinutes = 60): string
+    public function getSignedUrl(int $expiresInMinutes = 60): ?string
     {
-        return \Storage::disk('s3')->temporaryUrl(
-            $this->s3_path,
-            now()->addMinutes($expiresInMinutes)
-        );
+        // Use configured filesystem disk (driven by FILESYSTEM_DISK env via config)
+        $disk = config('filesystems.default');
+
+        try {
+            // Prefer signed URLs for remote S3-like disks
+            if (in_array($disk, ['s3', 'rustfs'])) {
+                return \Storage::disk($disk)->temporaryUrl(
+                    $this->s3_path,
+                    now()->addMinutes($expiresInMinutes)
+                );
+            }
+
+            // For local/public disks prefer stored absolute URL (s3_url) if present
+            if ($this->s3_url) {
+                return $this->s3_url;
+            }
+
+            return \Storage::disk($disk)->url($this->s3_path);
+        } catch (\Throwable $e) {
+            // Fallback to whatever absolute URL we have stored (s3_url) or null
+            return $this->s3_url ?? null;
+        }
     }
 
     public function recordPlay(?int $showId = null, ?int $userId = null, ?string $context = null): void
