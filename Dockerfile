@@ -10,6 +10,15 @@ RUN nix-channel --update && \
     nixpkgs.python3Packages.supervisor \
     nixpkgs.redis
 
+# Build assets and install PHP/Node deps in builder stage
+WORKDIR /app
+# Copy minimal files required for installing dependencies and building assets
+COPY composer.json composer.lock* package.json package-lock.json* /app/
+# Composer install (no dev) and Node install/build (dev deps required for vite)
+RUN composer install --no-interaction --optimize-autoloader --no-dev --prefer-dist || true && \
+    npm_config_production=false npm ci --no-audit --no-fund && \
+    npm run build
+
 FROM debian:bookworm-slim
 
 # Copiar binarios de Nix

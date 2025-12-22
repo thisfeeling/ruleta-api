@@ -3,16 +3,20 @@ set -e
 
 cd /app
 
-# Instalar dependencias de Composer
-composer install --no-interaction --optimize-autoloader --no-dev
+# Instalar dependencias de Composer si faltan
+if [ ! -d vendor ] || [ ! -f vendor/autoload.php ]; then
+    composer install --no-interaction --optimize-autoloader --no-dev --prefer-dist
+else
+    echo "Vendor exists, skipping composer install"
+fi
 
-# Instalar dependencias de Node (incluye devDependencies para poder ejecutar Vite)
-# Forzar la instalación de devDependencies incluso si npm está en modo production
-# Usar la variable de entorno npm_config_production=false es compatible con más versiones de npm
-npm_config_production=false npm ci --no-audit --no-fund
-
-# Compilar assets
-npm run build
+# Instalar dependencias de Node y compilar assets si build no existe
+if [ ! -d public/build ]; then
+    npm_config_production=false npm ci --no-audit --no-fund
+    npm run build
+else
+    echo "Assets exist, skipping npm install and build"
+fi
 
 # Limpiar caches
 php artisan config:clear
