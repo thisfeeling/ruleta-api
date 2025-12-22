@@ -12,7 +12,8 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->followingRedirects()->get('/');
+        // Use the local /up health endpoint to avoid following external redirects
+        $response = $this->get('/up');
 
         $response->assertStatus(200);
     }

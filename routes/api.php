@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\Public\StatusController;
+use App\Http\Controllers\Auth\{AuthController, PlayerAuthController};
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -12,3 +13,25 @@ Route::get('/user', function (Request $request) {
 // Status API - Public health check
 // Health check endpoint - a small, lightweight controller so monitoring and LB checks can hit it.
 Route::get('/status', [StatusController::class, 'index'])->name('status');
+
+// Public Auth routes
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/player/join', [PlayerAuthController::class, 'join']);
+Route::post('/auth/player/reconnect', [PlayerAuthController::class, 'reconnect']);
+
+// Protected routes
+Route::middleware(['auth:sanctum', 'sanctum.token_expired'])->group(function () {
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
+
+    // Supervisor only routes
+    Route::middleware(['supervisor'])->prefix('supervisor')->group(function () {
+        Route::post('/shows/{show}/start', [\App\Http\Controllers\Supervisor\ShowController::class, 'start']);
+        Route::post('/shows/{show}/pause', [\App\Http\Controllers\Supervisor\ShowController::class, 'pause']);
+        Route::post('/shows/{show}/end', [\App\Http\Controllers\Supervisor\ShowController::class, 'end']);
+
+        // Audio review endpoints
+        Route::post('/audio/{audioPlay}/approve', [\App\Http\Controllers\Supervisor\AudioController::class, 'approve']);
+        Route::post('/audio/{audioPlay}/reject', [\App\Http\Controllers\Supervisor\AudioController::class, 'reject']);
+    });
+});

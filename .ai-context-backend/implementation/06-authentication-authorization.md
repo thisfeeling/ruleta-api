@@ -1,6 +1,6 @@
 # 06 - Authentication & Authorization
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 

@@ -13,7 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'supervisor' => \App\Http\Middleware\EnsureSupervisor::class,
+            'sanctum.token_expired' => \App\Http\Middleware\EnsureTokenNotExpired::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

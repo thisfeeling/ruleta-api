@@ -19,6 +19,7 @@ return new class extends Migration
                 'scheduled',
                 'lobby',
                 'in_progress',
+                'paused',
                 'completed',
                 'cancelled'
             ])->default('scheduled');

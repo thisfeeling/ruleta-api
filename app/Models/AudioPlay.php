@@ -16,6 +16,8 @@ class AudioPlay extends Model
         'played_by',
         'played_at',
         'context',
+        'approved',
+        'reviewed_by',
     ];
 
     protected $casts = [
@@ -30,5 +32,10 @@ class AudioPlay extends Model
     public function player(): BelongsTo
     {
         return $this->belongsTo(Player::class, 'played_by');
+    }
+
+    public function show(): BelongsTo
+    {
+        return $this->belongsTo(Show::class, 'show_id');
     }
 }

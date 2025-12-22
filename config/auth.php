@@ -112,4 +112,7 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /* Custom: Token expiration in minutes (0 = no expiration) */
+    'token_expiration_minutes' => env('AUTH_TOKEN_EXPIRES_MINUTES', 0),
+
 ];
