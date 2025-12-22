@@ -1,6 +1,6 @@
 # 04 - Core Services
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 
@@ -323,7 +323,13 @@ Agregar configuración en `config/services.php`:
     'api_key' => env('ELEVENLABS_API_KEY'),
     'voice_id' => env('ELEVENLABS_VOICE_ID'),
 ],
-```
+**With Timestamps & Multi-Context**
+
+The TTS service also supports timestamped generation using the `/with-timestamps` endpoint and streaming/multi-context websocket flows when character-level timing is required (useful for the "Deletréalo" game). Use `TTSService::convertWithTimestamps` to retrieve `audio_base64` plus `alignment` and `normalized_alignment`. Use `TTSService::generateWithTimestampsAndStore` to generate, upload, and save the alignment data to `AudioTrack.metadata`.
+
+**Audit / Cost Tracking**
+
+Each TTS generation stores response headers returned by ElevenLabs (e.g. `x-character-count`, `request-id`) in `AudioTrack.metadata.elevenlabs`. We also record per-generation usage in a `tts_usages` table to allow daily/weekly aggregation for cost tracking. The model is `App\Models\TTSUsage` and the table is `tts_usages`.```
 
 ### 4.3 Audio Service
 

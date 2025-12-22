@@ -740,7 +740,7 @@ tail -f storage/logs/reverb.log
 ## Sincronización con Frontend
 
 El frontend debe:
-1. Conectarse via Laravel Echo a `wss://api.ruleta.local:8080`
+1. Conectarse via Laravel Echo a `wss://0.0.0.0:8080`
 2. Subscribirse a canales: `show.{id}`, `player.{id}`, `game.{id}`
 3. Escuchar eventos: `.started`, `.phase_changed`, `.eliminated`, etc
 
