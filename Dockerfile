@@ -13,9 +13,12 @@ RUN nix-channel --update && \
 # Build assets and install PHP/Node deps in builder stage
 WORKDIR /app
 # Copy minimal files required for installing dependencies and building assets
-COPY composer.json composer.lock* package.json package-lock.json* /app/
+COPY composer.json composer.lock* package.json package-lock.json* vite.config.js /app/
+# Copy resources needed by Vite
+COPY resources /app/resources
 # Composer install (no dev) and Node install/build (dev deps required for vite)
-RUN composer install --no-interaction --optimize-autoloader --no-dev --prefer-dist || true && \
+# Use --no-scripts to avoid running artisan during install in the builder stage
+RUN composer install --no-interaction --optimize-autoloader --no-dev --prefer-dist --no-scripts || true && \
     npm_config_production=false npm ci --no-audit --no-fund && \
     npm run build
 
