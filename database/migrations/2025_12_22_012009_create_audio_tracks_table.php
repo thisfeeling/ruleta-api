@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('audio_tracks', function (Blueprint $table) {
+            $table->id();
+            $table->string('key')->unique();
+            $table->enum('channel', ['music', 'sfx', 'voice']);
+            $table->string('s3_path');
+            $table->string('s3_url');
+            $table->integer('duration_ms')->nullable();
+            $table->float('default_volume')->default(1.0);
+            $table->json('metadata')->nullable();
+            $table->boolean('is_preloaded')->default(false);
+            $table->timestamps();
+
+            $table->index('key');
+            $table->index('channel');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('audio_tracks');
+    }
+};

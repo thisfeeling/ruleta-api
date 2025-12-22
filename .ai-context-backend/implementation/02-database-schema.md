@@ -1,6 +1,6 @@
 # 02 - Database Schema
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 
