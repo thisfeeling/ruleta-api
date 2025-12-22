@@ -42,6 +42,10 @@ WORKDIR /app
 # Copiar archivos de la aplicación
 COPY . /app
 
+# Copiar artefactos compilados desde la etapa builder para evitar reinstalar en la imagen final
+COPY --from=builder /app/public/build /app/public/build
+COPY --from=builder /app/vendor /app/vendor
+
 # Copiar scripts y configuraciones
 COPY .docker/start.sh /assets/start.sh
 COPY .docker/supervisord.conf /etc/supervisord.conf
