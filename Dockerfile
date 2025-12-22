@@ -7,7 +7,7 @@ RUN nix-channel --update && \
     nixpkgs.nodejs_22 \
     nixpkgs.nginx \
     nixpkgs.python3 \
-    nixpkgs.supervisor \
+    nixpkgs.python3Packages.supervisor \
     nixpkgs.redis
 
 FROM debian:bookworm-slim
