@@ -7,8 +7,9 @@ cd /app
 composer install --no-interaction --optimize-autoloader --no-dev
 
 # Instalar dependencias de Node (incluye devDependencies para poder ejecutar Vite)
-# Use "--omit=none" to force installing dev deps even if npm is configured for production
-npm ci --omit=none
+# Forzar la instalación de devDependencies incluso si npm está en modo production
+# Usar la variable de entorno npm_config_production=false es compatible con más versiones de npm
+npm_config_production=false npm ci --no-audit --no-fund
 
 # Compilar assets
 npm run build
