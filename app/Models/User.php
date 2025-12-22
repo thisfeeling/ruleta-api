@@ -6,11 +6,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +24,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'avatar_url',
     ];
 
     /**
@@ -34,15 +39,55 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string,string>
      */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    // Relationships
+    public function players(): HasMany
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(Player::class);
+    }
+
+    public function supervisedShows(): HasMany
+    {
+        return $this->hasMany(Show::class, 'supervisor_id');
+    }
+
+    public function audioPlays(): HasMany
+    {
+        return $this->hasMany(AudioPlay::class, 'played_by');
+    }
+
+    // Scopes
+    public function scopeRole($query, string $role)
+    {
+        return $query->where('role', $role);
+    }
+
+    public function scopePlayers($query)
+    {
+        return $query->where('role', 'player');
+    }
+
+    public function scopeSupervisors($query)
+    {
+        return $query->where('role', 'supervisor');
+    }
+
+    // Helpers
+    public function isSupervisor(): bool
+    {
+        return $this->role === 'supervisor';
+    }
+
+    public function isPlayer(): bool
+    {
+        return $this->role === 'player';
     }
 }

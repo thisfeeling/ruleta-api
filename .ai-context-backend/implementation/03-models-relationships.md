@@ -1,6 +1,6 @@
 # 03 - Models & Relationships
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 

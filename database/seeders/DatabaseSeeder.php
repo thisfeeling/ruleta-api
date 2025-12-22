@@ -17,8 +17,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AchievementSeeder::class,
-            // GameInstructionSeeder::class, // Create this in next step
-            // AudioTrackSeeder::class, // Create in next step
+            InitialDataSeeder::class,
+            // GameInstructionSeeder::class,
+            // AudioTrackSeeder::class,
         ]);
     }
 }
