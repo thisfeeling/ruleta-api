@@ -84,6 +84,32 @@ class EventSerializationTest extends TestCase
         $this->assertInstanceOf(Channel::class, $channels[1]);
     }
 
+    public function test_game_ended_serializes()
+    {
+        $game = Game::factory()->create(['is_bonus' => false]);
+
+        $results = [
+            'winners' => [1],
+            'scores' => [
+                ['player_id' => 1, 'normalized_score' => 100],
+            ],
+        ];
+
+        $event = new \App\Events\Games\GameEnded($game, $results);
+
+        $this->assertInstanceOf(ShouldBroadcast::class, $event);
+        $this->assertEquals('game.ended', $event->broadcastAs());
+
+        $payload = $event->broadcastWith();
+        $this->assertArrayHasKey('results', $payload);
+        $this->assertEquals($results, $payload['results']);
+
+        $channels = $event->broadcastOn();
+        $this->assertCount(2, $channels);
+        $this->assertInstanceOf(Channel::class, $channels[0]);
+        $this->assertInstanceOf(Channel::class, $channels[1]);
+    }
+
     public function test_player_eliminated_serializes()
     {
         $player = Player::factory()->create();

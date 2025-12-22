@@ -107,6 +107,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Service Providers
+    |--------------------------------------------------------------------------
+    |
+    | Register application service providers. In Laravel 12 the default
+    | providers can be merged with custom providers using
+    | ServiceProvider::defaultProviders()->merge([...])->toArray().
+    |
+    */
+    'providers' => \Illuminate\Support\ServiceProvider::defaultProviders()->merge([
+        App\Providers\GameServiceProvider::class,
+    ])->toArray(),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |

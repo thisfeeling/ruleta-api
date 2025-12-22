@@ -1,6 +1,6 @@
 # 07 - Game Services Base
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed  
 
 ## Objetivo
 
