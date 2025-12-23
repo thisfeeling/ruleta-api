@@ -39,4 +39,8 @@ Route::middleware(['auth:sanctum', 'sanctum.token_expired'])->group(function () 
     Route::post('/games/{game}/action', [\App\Http\Controllers\GameController::class, 'action']);
     Route::get('/games/{game}/state', [\App\Http\Controllers\GameController::class, 'state']);
     Route::post('/games/{game}/complete', [\App\Http\Controllers\GameController::class, 'complete'])->middleware('supervisor');
+
+    // Achievements
+    Route::get('/achievements', [\App\Http\Controllers\AchievementController::class, 'all']);
+    Route::get('/achievements/me', [\App\Http\Controllers\AchievementController::class, 'me']);
 });

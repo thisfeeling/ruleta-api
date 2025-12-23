@@ -13,12 +13,12 @@ class AchievementProgress extends Model
     protected $fillable = [
         'player_id',
         'achievement_id',
-        'progress',
+        'current_progress',
+        'required_progress',
         'metadata',
     ];
 
     protected $casts = [
-        'progress' => 'array',
         'metadata' => 'array',
     ];
 

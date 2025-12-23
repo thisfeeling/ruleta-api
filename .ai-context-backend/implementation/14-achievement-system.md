@@ -1,6 +1,6 @@
 # 14 - Achievement System
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 

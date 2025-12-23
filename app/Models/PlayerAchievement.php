@@ -15,11 +15,11 @@ class PlayerAchievement extends Model
         'achievement_id',
         'show_id',
         'unlocked_at',
-        'metadata',
+        'context',
     ];
 
     protected $casts = [
-        'metadata' => 'array',
+        'context' => 'array',
         'unlocked_at' => 'datetime',
     ];
 
