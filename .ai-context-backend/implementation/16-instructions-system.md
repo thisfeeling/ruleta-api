@@ -1,6 +1,7 @@
 # 16 - Instructions System
 
 **Status**: [x] Completed
+
 ## Objetivo
 
 Sistema de instrucciones pre-juego con tracking de lectura y audio TTS.

@@ -182,8 +182,21 @@ class EventSerializationTest extends TestCase
         $this->assertEquals('scoreboard.score_added', $event->broadcastAs());
 
         $payload = $event->broadcastWith();
-        $this->assertEquals($score->score, $payload['score']);
+        $this->assertEquals($score->normalized_score, $payload['normalized_score']);
         $this->assertEquals($score->player->id, $payload['player_id']);
+    }
+
+    public function test_scoreboard_updated_serializes()
+    {
+        $show = \App\Models\Show::factory()->create();
+        $event = new \App\Events\Scoreboard\ScoreboardUpdated($show);
+
+        $this->assertInstanceOf(ShouldBroadcast::class, $event);
+        $this->assertEquals('scoreboard.updated', $event->broadcastAs());
+
+        $payload = $event->broadcastWith();
+        $this->assertEquals($show->id, $payload['show_id']);
+        $this->assertArrayHasKey('scoreboard', $payload);
     }
 
     public function test_instructions_required_serializes()

@@ -2,45 +2,42 @@
 
 namespace App\Events\Scoreboard;
 
-use App\Models\PlayerScore;
+use App\Models\Show;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ScoreAdded implements ShouldBroadcast
+class ScoreboardUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public PlayerScore $score
+        public Show $show
     ) {}
 
     public function broadcastOn(): array
     {
-        $player = $this->score->player;
-
         return [
-            new Channel("show.{$player->show_id}"),
+            new Channel("show.{$this->show->id}"),
         ];
     }
 
     public function broadcastAs(): string
     {
-        return 'scoreboard.score_added';
+        return 'scoreboard.updated';
     }
 
     public function broadcastWith(): array
     {
-        $player = $this->score->player;
+        $scoreboard = app(\App\Services\Scoreboard\ScoreboardService::class)
+            ->getScoreboard($this->show);
 
         return [
-            'player_id' => $player->id,
-            'player_number' => $player->player_number ?? null,
-            'raw_score' => $this->score->raw_score,
-            'normalized_score' => $this->score->normalized_score,
-            'metadata' => $this->score->metadata ?? null,
+            'show_id' => $this->show->id,
+            'scoreboard' => $scoreboard,
+            'updated_at' => now()->toIso8601String(),
         ];
     }
 }
