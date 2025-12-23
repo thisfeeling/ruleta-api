@@ -8,6 +8,7 @@ Este directorio contiene la documentación contextual del backend del proyecto *
 
 ```
 .ai-context-backend/
+├── openapi.yaml          # Especificación OpenAPI 3.0 del API REST
 ├── README_INDEX.md          # Este archivo (índice principal)
 ├── goals/                   # Objetivos del proyecto
 │   ├── project-overview.md  # Visión general del proyecto

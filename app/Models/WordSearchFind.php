@@ -14,11 +14,14 @@ class WordSearchFind extends Model
         'player_id',
         'grid_id',
         'word',
+        'find_order',
+        'time_elapsed_ms',
         'found_at',
     ];
 
     protected $casts = [
         'found_at' => 'datetime',
+        'time_elapsed_ms' => 'integer',
     ];
 
     public function player(): BelongsTo

@@ -1,6 +1,6 @@
 # 08-13 - All Game Implementations
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 

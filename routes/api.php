@@ -34,4 +34,9 @@ Route::middleware(['auth:sanctum', 'sanctum.token_expired'])->group(function () 
         Route::post('/audio/{audioPlay}/approve', [\App\Http\Controllers\Supervisor\AudioController::class, 'approve']);
         Route::post('/audio/{audioPlay}/reject', [\App\Http\Controllers\Supervisor\AudioController::class, 'reject']);
     });
+
+    // Game endpoints (player actions, state, supervisor complete)
+    Route::post('/games/{game}/action', [\App\Http\Controllers\GameController::class, 'action']);
+    Route::get('/games/{game}/state', [\App\Http\Controllers\GameController::class, 'state']);
+    Route::post('/games/{game}/complete', [\App\Http\Controllers\GameController::class, 'complete'])->middleware('supervisor');
 });

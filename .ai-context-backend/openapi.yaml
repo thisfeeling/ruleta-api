@@ -1,0 +1,112 @@
+openapi: 3.0.3
+info:
+  title: Ruleta API (Game endpoints)
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /games/{game}/action:
+    post:
+      summary: Send a player action for the given game
+      parameters:
+        - name: game
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: object
+                  oneOf:
+                    - $ref: '#/components/schemas/FoundWordAction'
+                    - $ref: '#/components/schemas/SubmitSpellingAction'
+                    - $ref: '#/components/schemas/SpinAction'
+                    - $ref: '#/components/schemas/CastVoteAction'
+                    - $ref: '#/components/schemas/SubmitAnswerAction'
+      responses:
+        '200':
+          description: OK
+  /games/{game}/state:
+    get:
+      summary: Get current state for a game
+      parameters:
+        - name: game
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The game state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  state:
+                    type: object
+  /games/{game}/complete:
+    post:
+      summary: Complete game and compute eliminations/results (supervisor only)
+      parameters:
+        - name: game
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Completion results
+components:
+  schemas:
+    FoundWordAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [found_word]
+        word:
+          type: string
+        time_elapsed_ms:
+          type: integer
+      required: [type, word]
+    SubmitSpellingAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [submit_spelling]
+        spelling:
+          type: string
+      required: [type, spelling]
+    SpinAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [spin]
+      required: [type]
+    CastVoteAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [cast_vote]
+        voted_for_id:
+          type: integer
+      required: [type, voted_for_id]
+    SubmitAnswerAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [submit_answer]
+        answer:
+          type: string
+      required: [type, answer]

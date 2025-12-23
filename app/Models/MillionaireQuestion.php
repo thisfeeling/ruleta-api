@@ -12,15 +12,24 @@ class MillionaireQuestion extends Model
 
     protected $fillable = [
         'game_id',
-        'question',
-        'options',
-        'correct_option',
-        'metadata',
+        'question_number',
+        'question_text_es',
+        'question_text_en',
+        'option_a_es',
+        'option_a_en',
+        'option_b_es',
+        'option_b_en',
+        'option_c_es',
+        'option_c_en',
+        'option_d_es',
+        'option_d_en',
+        'correct_answer',
+        'time_limit_seconds',
+        'audio_question_url',
     ];
 
     protected $casts = [
-        'options' => 'array',
-        'metadata' => 'array',
+        'time_limit_seconds' => 'integer',
     ];
 
     public function game(): BelongsTo
