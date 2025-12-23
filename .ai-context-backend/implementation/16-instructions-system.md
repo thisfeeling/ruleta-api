@@ -1,7 +1,6 @@
 # 16 - Instructions System
 
-**Status**: [ ] Not Started
-
+**Status**: [x] Completed
 ## Objetivo
 
 Sistema de instrucciones pre-juego con tracking de lectura y audio TTS.
@@ -228,6 +227,19 @@ class InstructionController extends Controller
     }
 }
 ```
+
+## Estado de Implementación
+
+**Actualización (Backend):** Se añadió la implementación inicial del sistema de instrucciones:
+
+- `InstructionRead` model actualizado para reflejar la migración (`game_id`, `player_id`, `instruction_id`, `completed`, `started_at`, `completed_at`) y relaciones.
+- `InstructionService` con métodos `requireInstructions`, `markAsRead`, `checkAllCompleted`, `getReadStatus`.
+- Eventos: `InstructionsRequired`, `InstructionsCompleted` (broadcasting).
+- `InstructionController` con endpoints `markAsRead`, `getStatus`, `forceComplete`.
+- `GameInstructionSeeder` y registro en `DatabaseSeeder`.
+- Tests unitarios para `InstructionService` y pruebas funcionales básicas para el controller.
+
+**Pendiente:** Ejecutar test suite y CI (ver todo: tests/Unit + tests/Feature) para validar comportamiento.
 
 ## Próximos Pasos
 
