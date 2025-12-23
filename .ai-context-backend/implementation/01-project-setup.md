@@ -105,7 +105,6 @@ REVERB_PORT=8080
 REVERB_SCHEME=http
 
 # Frontend URL (CORS)
-FRONTEND_URL=http://localhost:5173
 WEB_APP_URL=http://localhost:5173
 ORIGINS=http://localhost:5173,http://localhost:8000
 
@@ -162,7 +161,7 @@ REVERB_PORT=8080
 REVERB_SCHEME=http
 
 # Frontend URL (CORS)
-FRONTEND_URL=https://tudominio.com
+WEB_APP_URL=https://tudominio.com
 
 # S3 Storage (RustFS)
 AWS_ACCESS_KEY_ID=

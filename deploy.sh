@@ -1,4 +1,5 @@
 #!/bin/bash
+# deploy.sh
 set -e
 
 cd /app

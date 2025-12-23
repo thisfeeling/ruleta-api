@@ -1,4 +1,5 @@
 #!/bin/bash
+# setup-php-extensions.sh
 set -e
 
 # Configurar extensiones PHP adicionales si es necesario

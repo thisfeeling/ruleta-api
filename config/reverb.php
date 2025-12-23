@@ -31,7 +31,9 @@ return [
         'reverb' => [
             'host' => env('REVERB_SERVER_HOST', '0.0.0.0'),
             'port' => env('REVERB_SERVER_PORT', 8080),
-            'path' => env('REVERB_SERVER_PATH', ''),
+            // Use REVERB_PATH for consistent routing (e.g. /ws). Previously this package used
+            // REVERB_SERVER_PATH; we standardize on REVERB_PATH in our env files.
+            'path' => env('REVERB_PATH', '/ws'),
             'hostname' => env('REVERB_HOST'),
             'options' => [
                 'tls' => [],

@@ -156,7 +156,7 @@ DB_USERNAME=<username>
 DB_PASSWORD=<password>
 REVERB_APP_KEY=<production-key>
 REVERB_APP_SECRET=<production-secret>
-FRONTEND_URL=https://yourdomain.com
+WEB_APP_URL=https://yourdomain.com
 ```
 
 ### Traefik Configuration

@@ -1,3 +1,4 @@
+// prestart.mjs
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 
