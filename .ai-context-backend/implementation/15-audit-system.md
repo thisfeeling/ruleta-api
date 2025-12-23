@@ -1,6 +1,6 @@
 # 15 - Audit System
 
-**Status**: [ ] Not Started
+**Status**: [x] Completed
 
 ## Objetivo
 
