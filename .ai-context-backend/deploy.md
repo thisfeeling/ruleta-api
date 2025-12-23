@@ -73,7 +73,38 @@ Browser (wss://) → Traefik (TLS termination) → Nginx (http, proxy /ws) → R
 - From a test container: `curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" http://127.0.0.1:8080/ws` should not return 404
 - From the browser: connect to `wss://api.ruleta.jemg.dev/ws` and check the WebSocket handshake in devtools Network tab
 
+### Small Reverb check script (local / CI)
+You can use the included Node script to verify a Reverb websocket handshake from CI or a test runner.
+
+1. Install (locally / CI):
+
+   npm install ws --no-save
+
+2. Run:
+
+   node scripts/check-reverb.js "wss://api.ruleta.jemg.dev/ws/app/tfbhkkj8eseagwzr45uv?protocol=7"
+
+The script exits `0` on success, non-zero on failure (timeout, handshake error, or network error). This is handy to add as a pre-deploy or post-deploy smoke test.
+
+### Echo / client snippet (example)
+Use the application *key* and the `/ws` path. Example with `laravel-echo`:
+
+```js
+import Echo from 'laravel-echo'
+
+window.Echo = new Echo({
+  broadcaster: 'pusher',
+  key: import.meta.env.VITE_REVERB_APP_KEY,
+  wsHost: import.meta.env.VITE_REVERB_HOST,
+  wsPort: import.meta.env.VITE_REVERB_PORT,
+  wssPort: import.meta.env.VITE_REVERB_PORT,
+  forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
+  enabledTransports: ['ws', 'wss'],
+  path: import.meta.env.VITE_REVERB_PATH // -> '/ws'
+})
+```
+
+This ensures the client connects to `/ws/app/{key}` automatically.
+
+
 ---
-
-¿Quieres que añada un snippet de Traefik o un `dokploy.md` separado con pasos para configurar secrets y envs en Dokploy? Si quieres, puedo crear también `.env.local.example` para desarrolladores.
-
