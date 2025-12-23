@@ -1,13 +1,103 @@
 openapi: 3.0.3
 info:
-  title: Ruleta API (Game endpoints)
+  title: Ruleta API
   version: 1.0.0
 servers:
   - url: /api
 paths:
+  /auth/player/join:
+    post:
+      summary: Player join (creates user/player, returns token + PIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                show_id:
+                  type: integer
+                name:
+                  type: string
+              required: [show_id, name]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /auth/player/reconnect:
+    post:
+      summary: Reconnect by PIN (returns token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pin:
+                  type: string
+              required: [pin]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /auth/login:
+    post:
+      summary: Supervisor / admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required: [email, password]
+      responses:
+        '200':
+          description: Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+  /auth/me:
+    get:
+      summary: Get current authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /auth/logout:
+    post:
+      summary: Logout and invalidate token
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: No content
   /games/{game}/action:
     post:
       summary: Send a player action for the given game
+      security:
+        - bearerAuth: []
       parameters:
         - name: game
           in: path
@@ -35,6 +125,8 @@ paths:
   /games/{game}/state:
     get:
       summary: Get current state for a game
+      security:
+        - bearerAuth: []
       parameters:
         - name: game
           in: path
@@ -54,6 +146,8 @@ paths:
   /games/{game}/complete:
     post:
       summary: Complete game and compute eliminations/results (supervisor only)
+      security:
+        - bearerAuth: []
       parameters:
         - name: game
           in: path
@@ -63,8 +157,374 @@ paths:
       responses:
         '200':
           description: Completion results
+  /games/{game}/instructions/read:
+    post:
+      summary: Mark instructions as read (player)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: game
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: No content
+  /games/{game}/instructions/status:
+    get:
+      summary: Get instructions read status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: game
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  read_by_count:
+                    type: integer
+  /games/{game}/spell/{spell_word}/upload:
+    post:
+      summary: Upload audio for a spell word (player)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: game
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: spell_word
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                player_id:
+                  type: integer
+              required: [file, player_id]
+      responses:
+        '201':
+          description: Audio uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+  /shows/{show}/scoreboard:
+    get:
+      summary: Get full scoreboard for a show
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: show
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Scoreboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scoreboard'
+  /shows/{show}/scoreboard/top:
+    get:
+      summary: Get top N players for a show
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: show
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Top players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlayerScore'
+  /scoreboard/me:
+    get:
+      summary: Get player's rank and scores
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Player scoreboard entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerScore'
+  /achievements:
+    get:
+      summary: List all achievements
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Achievements list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Achievement'
+  /achievements/me:
+    get:
+      summary: Player achievements and progress
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Player achievements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  achievements:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlayerAchievement'
+  /supervisor/shows/{show}/{action}:
+    post:
+      summary: Supervisor control (start|pause|end)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: show
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: action
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [start, pause, end]
+      responses:
+        '200':
+          description: OK
+  /supervisor/audio/{audioPlay}/{decision}:
+    post:
+      summary: Supervisor approve/reject an audio play
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: audioPlay
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: decision
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [approve, reject]
+      responses:
+        '200':
+          description: OK
+  /supervisor/audit-logs:
+    get:
+      summary: List audit logs (supervisor only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+  /supervisor/audit-logs/{id}:
+    get:
+      summary: Get audit log detail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Audit log detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+  /supervisor/audit-logs/export:
+    post:
+      summary: Export audit logs for a show (supervisor)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                show_id:
+                  type: integer
+                format:
+                  type: string
+                  enum: [csv,json]
+              required: [show_id]
+      responses:
+        '200':
+          description: Export job queued
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    NotFound:
+      description: Not found
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              errors:
+                type: object
   schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        eliminated_at:
+          type: string
+          format: date-time
+    JoinResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        player:
+          $ref: '#/components/schemas/Player'
+        token:
+          type: string
+        pin:
+          type: string
+    TokenResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        player:
+          $ref: '#/components/schemas/Player'
+        token:
+          type: string
+    UploadResponse:
+      type: object
+      properties:
+        audio_track:
+          type: object
+          properties:
+            id:
+              type: integer
+            signed_url:
+              type: string
+            duration_ms:
+              type: integer
+    Scoreboard:
+      type: object
+      properties:
+        show_id:
+          type: integer
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerScore'
+    PlayerScore:
+      type: object
+      properties:
+        player_id:
+          type: integer
+        player_number:
+          type: integer
+        normalized_score:
+          type: number
+    Achievement:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+    PlayerAchievement:
+      type: object
+      properties:
+        achievement_key:
+          type: string
+        progress:
+          type: number
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        show_id:
+          type: integer
+        event_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
     FoundWordAction:
       type: object
       properties:

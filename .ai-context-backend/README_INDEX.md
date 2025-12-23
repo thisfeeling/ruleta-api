@@ -9,6 +9,8 @@ Este directorio contiene la documentación contextual del backend del proyecto *
 ```
 .ai-context-backend/
 ├── openapi.yaml          # Especificación OpenAPI 3.0 del API REST
+├── ws-contract.md        # Contrato WebSocket (canales, eventos, payloads)
+├── use.md                # Guía de uso e integración (backend → frontend)
 ├── README_INDEX.md          # Este archivo (índice principal)
 ├── goals/                   # Objetivos del proyecto
 │   ├── project-overview.md  # Visión general del proyecto
